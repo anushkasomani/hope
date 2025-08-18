@@ -1,0 +1,5 @@
+{
+  "url": "http://localhost:5402/a2a",
+  "preferredTransport": "JSONRPC",
+  "capabilities": { "streaming": false }
+}
