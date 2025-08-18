@@ -1,0 +1,188 @@
+"use client";
+import React, { useEffect, useState } from 'react';
+import StartDemoButton from '../components/StartDemoButton';
+import ArtifactPanel from '../components/ArtifactPanel';
+import LogViewer from '../components/LogViewer';
+import ProgressStepper from '../components/ProgressStepper';
+import ConnectionDiagram from '../components/ConnectionDiagram';
+import Toast from '../components/Toast';
+
+export default function Page() {
+  const [running, setRunning] = useState(false);
+  const [logs, setLogs] = useState('(no logs)');
+  const [status, setStatus] = useState('idle');
+  const [agentCard, setAgentCard] = useState<any>(null);
+  const [payment, setPayment] = useState<any>(null);
+  const [response, setResponse] = useState<any>(null);
+  const [toast, setToast] = useState('');
+  const [lastStart, setLastStart] = useState<string>('');
+  const [lastNetwork, setLastNetwork] = useState<string>('');
+  const [clientLogEntries, setClientLogEntries] = useState<any[]>([]);
+
+  useEffect(() => {
+    let t = setInterval(async () => {
+      try {
+        const s = await fetch('/api/orchestrate/status').then((r) => r.json());
+        setStatus(s.step || 'idle');
+        if (s.tx) setResponse((r) => r || { json: { transaction: s.tx } });
+
+        const l = await fetch('/api/orchestrate/logs').then((r) => r.text());
+        setLogs(l || '(no logs)');
+
+        const acRes = await fetch('/api/artifacts/agent-card');
+        const ac = acRes.ok ? await acRes.json().catch(() => null) : null;
+        setAgentCard(ac || null);
+
+        const payRes = await fetch('/api/artifacts/payment');
+        const pay = payRes.ok ? await payRes.json().catch(() => null) : null;
+        setPayment(pay || null);
+      } catch (e) {
+        // ignore
+      }
+    }, 1400);
+    return () => clearInterval(t);
+  }, []);
+
+  // poll client-log entries for UI debugging
+  useEffect(() => {
+    let t = setInterval(async () => {
+      try {
+        const res = await fetch('/api/orchestrate/client-log');
+        if (res.ok) {
+          const js = await res.json().catch(() => null);
+          if (js && Array.isArray(js.entries)) setClientLogEntries(js.entries.slice(-10).reverse());
+        }
+      } catch (e) {
+        // ignore
+      }
+    }, 2000);
+    return () => clearInterval(t);
+  }, []);
+
+  async function startDemo() {
+    setRunning(true);
+    setToast('Starting demo...');
+    try {
+      const res = await fetch('/api/orchestrate/start', { method: 'POST' });
+      let js: any = null;
+      try {
+        js = await res.json().catch(() => null);
+      } catch (e) {
+        js = null;
+      }
+
+      // expose network result to UI for debugging
+      try {
+        const text = JSON.stringify(js) || await res.text().catch(() => '');
+        setLastNetwork(`status=${res.status} body=${text}`);
+      } catch (_) {
+        setLastNetwork(`status=${res.status}`);
+      }
+
+      // report start response to server-side client log for debugging
+      try {
+        await fetch('/api/orchestrate/client-log', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ event: 'start_response', status: res.status, body: js }),
+        }).catch(() => { });
+      } catch (e) {
+        // ignore
+      }
+
+      if (res.ok) {
+        setToast(js && js.pid ? `Started (pid: ${js.pid})` : 'Started');
+        setStatus('starting');
+        setLastStart(js && js.pid ? `Started pid=${js.pid}` : 'Started');
+      } else {
+        setToast('Failed to start demo');
+        setLastStart(`failed: ${res.status}`);
+      }
+    } catch (e) {
+      setToast('Failed to start demo');
+      setLastStart(`error: ${String(e)}`);
+      try {
+        await fetch('/api/orchestrate/client-log', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ event: 'start_error', error: String(e) }),
+        }).catch(() => { });
+      } catch (_) { }
+    } finally {
+      setRunning(false);
+      setTimeout(() => setToast(''), 2200);
+    }
+  }
+
+  async function hardRefresh() {
+    // call API to remove logs/pids
+    await fetch('/api/orchestrate/hard-refresh', { method: 'POST' }).then((r) => r.json()).then(() => {
+      // reset UI state
+      setLogs('(no logs)');
+      setAgentCard(null);
+      setPayment(null);
+      setResponse(null);
+      setStatus('idle');
+      setToast('Cleared demo logs');
+      setTimeout(() => setToast(''), 1800);
+    }).catch(() => {
+      // ignore
+    });
+  }
+
+  return (
+    <div className="min-h-screen p-8 bg-[var(--bg)] text-[var(--text)]">
+      <header className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-semibold">A2A x402 Demo Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <StartDemoButton running={running} onStart={() => startDemo()} onHardRefresh={() => hardRefresh()} />
+        </div>
+      </header>
+
+      {lastStart ? (
+        <div className="mb-4 text-sm text-gray-700">Last start: {lastStart}</div>
+      ) : null}
+      {lastNetwork ? (
+        <div className="mb-2 text-sm text-gray-600">Network: {lastNetwork}</div>
+      ) : null}
+
+      {clientLogEntries.length > 0 ? (
+        <div className="mb-4 p-3 bg-[var(--panel)] rounded-md text-sm">
+          <div className="font-medium mb-2">Client log (most recent)</div>
+          <ul className="list-disc pl-5 leading-tight">
+            {clientLogEntries.map((e: any, i: number) => (
+              <li key={i}><strong>{e.ts}</strong>: {JSON.stringify(e.body)}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="grid grid-cols-12 gap-6">
+        <aside className="col-span-3 space-y-4">
+          <ConnectionDiagram />
+          <ArtifactPanel agentCard={agentCard} payment={payment} response={response} />
+        </aside>
+
+        <main className="col-span-6">
+          <h3 className="mb-2 text-lg font-medium">Logs</h3>
+          <LogViewer logs={logs} />
+        </main>
+
+        <aside className="col-span-3">
+          <h3 className="mb-2 text-lg font-medium">Progress</h3>
+          <div className="p-4 bg-[var(--panel)] rounded-md shadow-sm">
+            <ProgressStepper step={status} />
+          </div>
+
+          <div className="mt-6 p-4 bg-[var(--panel)] rounded-md shadow-sm">
+            <h4 className="font-medium mb-2">Details</h4>
+            <div className="text-sm text-gray-700">Network: polygon-amoy (80002)</div>
+            <div className="text-sm text-gray-700">Payment: 0.01 USDC</div>
+          </div>
+        </aside>
+      </div>
+
+      <Toast message={toast} onClose={() => setToast('')} />
+    </div>
+  );
+} 
