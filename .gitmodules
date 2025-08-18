@@ -1,0 +1,3 @@
+[submodule "external/A2A"]
+	path = external/A2A
+	url = https://github.com/a2aproject/A2A
