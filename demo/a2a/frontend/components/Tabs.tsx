@@ -1,8 +1,18 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export default function Tabs({ tabs }: { tabs: { id: string; label: string; content: React.ReactNode }[] }) {
-  const [active, setActive] = useState(tabs[0]?.id ?? '');
+export default function Tabs({ tabs, active, onChange }: { tabs: { id: string; label: React.ReactNode; content: React.ReactNode }[]; active?: string; onChange?: (id: string) => void }) {
+  const [activeId, setActiveId] = useState(active ?? (tabs[0]?.id ?? ''));
+
+  useEffect(() => {
+    if (active !== undefined) setActiveId(active);
+  }, [active]);
+
+  function select(id: string) {
+    if (onChange) onChange(id);
+    if (active === undefined) setActiveId(id);
+  }
 
   return (
     <div>
@@ -11,10 +21,10 @@ export default function Tabs({ tabs }: { tabs: { id: string; label: string; cont
           <button
             key={t.id}
             role="tab"
-            aria-selected={active === t.id}
+            aria-selected={activeId === t.id}
             aria-controls={`panel-${t.id}`}
-            onClick={() => setActive(t.id)}
-            className={`px-3 py-1 rounded ${active === t.id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+            onClick={() => select(t.id)}
+            className={`px-3 py-1 rounded ${activeId === t.id ? 'bg-accent text-white' : 'bg-panel text-muted'}`}
           >
             {t.label}
           </button>
@@ -22,11 +32,15 @@ export default function Tabs({ tabs }: { tabs: { id: string; label: string; cont
       </div>
 
       <div>
-        {tabs.map((t) => (
-          <div key={t.id} id={`panel-${t.id}`} role="tabpanel" hidden={active !== t.id}>
-            {t.content}
-          </div>
-        ))}
+        <AnimatePresence mode="wait">
+          {tabs.map((t) => (
+            activeId === t.id ? (
+              <motion.div key={t.id} id={`panel-${t.id}`} role="tabpanel" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>
+                {t.content}
+              </motion.div>
+            ) : null
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );

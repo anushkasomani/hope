@@ -13,6 +13,7 @@ export default function Page() {
   const [agentCard, setAgentCard] = useState<any>(null);
   const [payment, setPayment] = useState<any>(null);
   const [response, setResponse] = useState<any>(null);
+  const [artifactActive, setArtifactActive] = useState<string | undefined>(undefined);
   const [toast, setToast] = useState('');
   const [lastStart, setLastStart] = useState<string>('');
   const [lastNetwork, setLastNetwork] = useState<string>('');
@@ -50,11 +51,17 @@ export default function Page() {
           } catch (_) { }
           try {
             const resp = await fetchWithRetries('/api/artifacts/response', 4, 600);
-            if (resp) setResponse(resp);
+            if (resp) {
+              setResponse(resp);
+              // ensure artifacts panel shows response
+              setArtifactActive('response');
+            }
           } catch (_) { }
           // Notify user on completion states
           if (newStep === 'settled' || newStep === 'done') {
+            // show toast with action to open artifacts
             setToast('Demo completed');
+            // toast action will be provided below when rendering Toast
           }
         }
         prevStep.current = newStep;
@@ -128,9 +135,12 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen p-8 bg-[var(--bg)] text-[var(--text)]">
+    <div className="min-h-screen p-8" style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}>
       <header className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-semibold">A2A x402 Demo Dashboard</h1>
+        <div>
+          <h1 className="text-3xl font-semibold">A2A x402 Demo Dashboard</h1>
+          <div className="text-sm text-muted">Demo orchestration & artifacts</div>
+        </div>
         <div className="flex items-center gap-3">
           <StartDemoButton running={running} onStart={() => startDemo()} onHardRefresh={() => hardRefresh()} />
         </div>
@@ -145,24 +155,31 @@ export default function Page() {
 
       <div className="grid grid-cols-12 gap-6">
         <aside className="col-span-3 space-y-4">
-          <ConnectionDiagram />
-          <ArtifactPanel agentCard={agentCard} payment={payment} response={response} />
+          <div className="p-4 bg-panel rounded-lg shadow-soft">
+            <ConnectionDiagram />
+          </div>
+          <div className="p-4 bg-panel rounded-lg shadow-soft">
+            <ArtifactPanel agentCard={agentCard} payment={payment} response={response} active={artifactActive} onActiveChange={(id: string) => setArtifactActive(id)} />
+          </div>
         </aside>
 
-        <main className="col-span-9">
+        <main className="col-span-6">
           <h3 className="mb-2 text-lg font-medium">Logs</h3>
-          <LogViewer logs={logs} />
+          <div className="p-4 bg-panel rounded-lg shadow-soft">
+            <LogViewer logs={logs} />
+          </div>
         </main>
+
         <aside className="col-span-3">
-          <div className="mt-6 p-4 bg-[var(--panel)] rounded-md shadow-sm">
+          <div className="mt-0 p-4 bg-panel rounded-lg shadow-soft">
             <h4 className="font-medium mb-2">Details</h4>
-            <div className="text-sm text-gray-700">Network: polygon-amoy (80002)</div>
-            <div className="text-sm text-gray-700">Payment: 0.01 USDC</div>
+            <div className="text-sm text-muted">Network: polygon-amoy (80002)</div>
+            <div className="text-sm text-muted">Payment: 0.01 USDC</div>
           </div>
         </aside>
       </div>
 
-      <Toast message={toast} onClose={() => setToast('')} />
+      <Toast message={toast} onClose={() => setToast('')} action={response ? { label: 'View Response', onClick: () => setArtifactActive('response') } : undefined} />
     </div>
   );
 } 

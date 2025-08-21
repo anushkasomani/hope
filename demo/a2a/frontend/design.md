@@ -1,129 +1,99 @@
-# Frontend Design Plan — A2A x402 Demo Dashboard
+# Frontend Dashboard Design Plan
 
-Goal: Improve the existing demo frontend into a modern, sleek, minimal dashboard UI that clearly visualizes the A2A + x402 demo flow. Use Aceternity UI component primitives (see https://ui.aceternity.com/components) where appropriate to accelerate implementation while keeping the design clean and educational.
+## Purpose
+A concise, actionable design and implementation plan to completely revamp the A2A x402 demo dashboard UI. The goal is a modern, elegant, presentation-ready dashboard for demos that emphasizes clarity, motion, and a polished dark theme.
 
-Summary of target visual and functional goals
+## Goals
+- Presentable, modern, and elegant demo dashboard for live demos and screenshots.
+- Dark background, white/near-white text, purple accents and subtle neutrals.
+- Smooth micro-interactions (button clicks, tab changes, toast) using Motion.
+- Clear hierarchy: left utilities/controls, center logs/primary content, right artifacts/details.
+- Accessibility-first: sufficient contrast, keyboard focus states, aria attributes.
 
-- Single-page dashboard (desktop-first, 16:9 mockup) with three clear columns:
-  - Left: Agent cards + artifacts (AgentCard JSON, X-PAYMENT base64 + decoded, X-PAYMENT-RESPONSE)
-  - Middle: Large Logs viewer (monospaced) with labeled sections
-  - Right: Controls and Progress stepper (Compile → Start services → Verify → Settle → Done)
-- Prominent header: `A2A x402 Demo Dashboard` with Start Demo / Running state
-- Show directional connections client → service → resource → facilitator
-- Minimal, educational, high contrast for important artifacts, muted panels for logs
-- Use Aceternity UI components for buttons, tabs, code blocks, loaders, steppers, cards, and badges
+## Visual Language
+- Theme: Dark (background: near-black / deep slate), foreground: white/near-white, accents: purple (#7C3AED or similar), secondary accents: teal/rose for statuses.
+- Tone: Minimal, spacious, slightly rounded UI with subtle shadows and glassy panels.
+- Typography: Primary - Inter/Manrope (san-serif) for UI; alternative fallbacks: Geist, IBM Plex Sans, Mona Sans. Use variable fonts where possible.
+- Spacing: generous padding (16–24px), consistent 8px baseline grid.
 
-Design tokens (color / typography)
+## Tools & Libraries
+- Styling: Tailwind CSS (existing), extend with shadcn/ui components and Radix primitives/themes for a11y and consistent patterns.
+- Icons: Material Symbols, Heroicons, Lucide (install as needed; use consistent icon set for primary controls, accent icons from Lucide/Heroicons).
+- Animations: Framer Motion (Motion) for button subtle scale/press, component entrance, tab transitions, and toast animation.
+- Fonts: Load Inter (variable) and fallbacks; provide optional bundles for Manrope, IBM Plex Sans.
+- Dev UX: Hot reload with Next.js (already present). Keep builds fast and optional tailwind JIT.
 
-- Background: #FFFFFF (white)
-- Surface / panels: #F7F8FA (very light) or charcoal panels #1F2937 for dark mode
-- Text: Dark slate #0F172A
-- Accent (primary): Teal #00BFA6 (use for primary action, active state)
-- Warning / attention: Amber #FFB020
-- Monospace: `ui-mono` / system monospace for logs and JSON
-- Sans: Inter / system-ui for UI text
-- Radii: 8px for cards, 6px for chips
-- Shadows: subtle (e.g., 0 6px 18px rgba(15,23,42,0.06))
+## Accessibility
+- All interactive elements keyboard-focusable with clear focus rings.
+- Sufficient contrast ratio for text and critical UI elements.
+- Aria labels for live regions (logs), toast, and important actions.
+- Reduced motion toggle (respect prefers-reduced-motion media query) for users who disable motion.
 
-Component mapping to Aceternity primitives
+## Layout & Component Map
+- Global layout: Header (top) with title + actions; left column: Controls (Start, Hard Refresh, Connection Diagram, AgentCard/Artifacts); main column: Logs (primary); right column: Details (artifacts, details card). On narrow screens, stack controls -> logs -> artifacts.
 
-- Header
-  - Component: `Hero Sections` or `Hero Highlight` (lightweight header) for the title area
-  - Buttons: `Stateful Button` for Start Demo (shows loading / success states) and disabled gray `Button` for Running state
-- Progress
-  - Component: `Multi Step Loader` / `Timeline` for stepper view. Use `Stateful Button`+`Loaders` for spinner
-- Artifacts (left column)
-  - Component: `Cards` / `Codeblock` for pretty JSON; `Copy` action using `Stateful Button` or icon button
-  - Tabbed view: `Animated Tabs` (AgentCard / X-PAYMENT / X-PAYMENT-RESPONSE)
-  - Small avatars: `Apple Cards Carousel` or custom small circular avatars for agents
-- Logs (center column)
-  - Component: `Codeblock` or `Code Block` with monospaced font and syntax-like styling; use `Loaders` and `Infinite Moving Cards` for subtle motion if desired
-  - Use `Scrollbar` styling and `LogViewer` wrapper with auto-scroll
-- Right column (controls)
-  - Component: `Container / Feature sections` containing `Stateful Button` (Start), `Sticky Banner` for status, `Sparkles`/`Spotlight` for attention on tx link
-- Small visuals and connectors
-  - Use `World Map` or `Direction Aware Hover` to show arrows, or simple SVG connectors inside a `Container` block
-- Microinteractions
-  - Copy-to-clipboard: small button next to code blocks — use `Stateful Button` to show success
-  - Tx link: `Link Preview` with small `Link` icon
-  - Loading spinner: `Multi Step Loader` with circular spinner
+Components to implement/restyle (priority order):
+1. `StartDemoButton` — animated, tactile button with purple gradient, loading state.
+2. `LogViewer` — fixed-height scroll panel, monospace logs, filter toggle (Follow), syntax highlight for JSON blocks, no auto-scroll by default.
+3. `ArtifactPanel` — tabbed panel with animated tab transitions, copy button with toast.
+4. `ConnectionDiagram` — simplified icons with subtle motion on status changes.
+5. `Toast` — improved design with animation and optional action (Open artifacts).
+6. `Details` card — compact, styled info card with icons and action links.
+7. Layout shell (`app/page.tsx`) — responsive grid, spacing, and polish.
 
-UX & accessibility
+## Motion & Interaction Patterns
+- Buttons: subtle upward lift on hover, quick shrink on press (scale 0.98), focus ring visible.
+- Tabs: fade + slide transition between tabs.
+- Toast: slide in from bottom-right, with icon and auto-hide.
+- Logs: fade-in for newly highlighted error lines when they first appear (if Follow enabled).
+- Orchestrator start: show spinner and animated progress indicator while starting; on completion show success toast with link to artifacts.
 
-- Keyboard: Start button focusable; logs scrollable by keyboard; copy buttons accessible
-- ARIA: Labels for each panel (aria-labelledby), role="log" for logs with aria-live="polite" when new entries arrive
-- Contrast: ensure text over panels meets 4.5:1 where possible
-- Reduced motion: respect `prefers-reduced-motion` for loaders/animations
+## Implementation Plan (staged tasks)
+Stage 1 — Design doc and scaffolding (this task)
+Stage 2 — Theme setup
+- Add Tailwind theme tokens for dark colors and purple accents.
+- Add global CSS with font imports and base styles respecting `prefers-color-scheme`.
+- Install shadcn/ui (or copy minimal components) and Radix primitives.
 
-Data & interactions
+Stage 3 — Core layout and components
+- Implement new layout in `app/page.tsx` with responsive grid.
+- Replace LogViewer styles and integrate JSON pretty-printing (already updated).
+- Restyle ArtifactPanel with animated tabs.
 
-- Orchestration flow:
-  - Click `Start Demo` → POST `/api/orchestrate/start` → server spawns orchestrator
-  - Frontend polls `/api/orchestrate/status` for `step` and `tx`
-  - Frontend polls `/api/orchestrate/logs` for log updates
-  - Frontend calls `/api/artifacts/*` to populate AgentCard, X-PAYMENT, X-PAYMENT-RESPONSE
-- Local/Remote considerations:
-  - Local (dev): Next API routes shell-out to `demo/scripts/start-all.sh`. Logs read from `/tmp`.
-  - Vercel/Prod: read-only; use remote orchestrator webhook and proxied artifact endpoints. Shell-out is disabled.
+Stage 4 — Motion and interactions
+- Add Framer Motion to animate StartDemoButton, tabs, toast, and subtle log highlights.
+- Respect `prefers-reduced-motion`.
 
-Implementation tasks and checklist (detailed)
+Stage 5 — Fonts and icons
+- Add Inter (variable) via Google Fonts or local; include fallbacks.
+- Add icons set and map icons to existing components.
 
-A. Project bootstrap (already done partial)
-- [x] Confirm `demo/a2a/frontend/package.json` and `tsconfig.json` are correct.
-- [ ] Add ESLint / Prettier and format rules consistent with repository.
-- [ ] Install Aceternity UI package (or add as design guide only)
-  - `npm i @aceternity/ui` (or the exact package name if purchased)
+Stage 6 — Polish & QA
+- Ensure accessibility, keyboard navigation, color contrast.
+- Small visual polish, shadows, spacing.
+- Cross-browser checks and responsive checks.
 
-B. Layout & core components
-- [x] Implement `app/layout.tsx` with global styles, fonts, theme provider (Tailwind or CSS variables)
-- [x] Implement `components/Header.tsx` using `Hero Sections` look (skeleton)
-- [x] Implement `components/ProgressStepper` with Aceternity `Multi Step Loader` styles (skeleton)
-- [x] Implement `components/ArtifactPanel` with `Tabs` and `Codeblock` (copy buttons)
-- [x] Implement `components/LogViewer` using `Codeblock` and auto-scroll
-- [ ] Implement `components/ConnectionDiagram` (SVG connectors and small avatars for Client/Service/Resource/Facilitator)
+## Acceptance Criteria
+- Dashboard has a consistent dark theme with purple accents.
+- Buttons and interactive elements have polished animations and accessible focus states.
+- Artifacts auto-refresh on demo completion and toasts are visible.
+- Log viewer is readable, formatted, and does not auto-scroll unless Follow enabled.
+- Responsive at mobile/tablet/desktop widths.
 
-C. API integration and local orchestration
-- [x] Harden `/api/orchestrate/start` to check for `ORCHESTRATOR_MODE` and deny shell-out if `ORCHESTRATOR_MODE=remote` or `VERCEL=true`.
-- [x] Implement `/api/orchestrate/status`, `/api/orchestrate/logs`, `/api/artifacts/*` (already scaffolded) — ensure robust file detection and fallback filenames.
-- [ ] Endpoint security: Gate shell-out with a local-only header or require developer confirmation.
+## Deliverables
+- `design.md` (this file)
+- Tailwind theme tokens update in `tailwind.config.cjs`
+- Reworked components under `components/` with Motion and shadcn/Radix primitives
+- Updated `app/page.tsx` layout
+- PR branch `feature/dashboard` containing all changes
 
-D. Polishing and microinteractions
-- [x] Add copy-to-clipboard with success toast for JSON snippets (use `Stateful Button`) — implemented basic copy feedback
-- [x] Add small link icon next to tx hash and deep link to Amoy explorer using `AMOY_EXPLORER_BASE` from env — implemented
-- [x] Add spinner and step animations; ensure `prefers-reduced-motion` respected — basic spinner added
-- [ ] Replace inline components with Aceternity UI primitives (Stateful Button, Codeblock, Tabs)
+## Timeline & Next steps
+Next: implement Stage 2 (Theme setup). I will:
+- Add Tailwind color tokens, dark theme variables, and font imports.
+- Wire up a theme provider if needed and update base layout styles.
 
-E. Testing & QA
-- [x] Manual test: local mode: start frontend → Click Start Demo → verify steps progress and artifacts populate
-- [x] Test `REAL_SETTLE=true` path and ensure tx hash appears (and link to explorer)
-- [ ] Test Vercel mode by pointing to a remote orchestrator webhook: ensure read-only artifacts load but no shell-out happens
-
-F. Deployment (Vercel)
-- [ ] Add `vercel.json` to configure environment and rewrites if needed
-- [ ] Ensure `ORCHESTRATOR_MODE=remote` in Vercel env; configure `ORCHESTRATOR_BASE_URL` to your orchestrator endpoint
-- [ ] Remove local-only secrets from Vercel UI and use secure storage for remote webhook credentials
-
-G. Deliverables & docs
-- [x] `demo/a2a/frontend/README.md` with local dev steps and Vercel deployment notes (skeleton)
-- [x] `demo/a2a/frontend/design.md` (this file) for design reference
-- [ ] Component usage docs mapping Aceternity component names to implemented components
-
-Timeline & priorities
-
-- Phase 0 (1 day): complete layout, header, stepper, log viewer, artifact panel skeleton
-- Phase 1 (1 day): wire APIs and polling; implement start orchestration and log tailing in local dev
-- Phase 2 (0.5 day): add microinteractions, copy, explorer links, and polish
-- Phase 3 (0.5 day): prepare Vercel deployment (read-only) and docs
-
-Accessibility & security reminders
-
-- Do not shell-out when running on Vercel; gate with `process.env.VERCEL` or `ORCHESTRATOR_MODE`.
-- Keep secrets out of client bundles; only server API routes should access private keys or run scripts.
-
-References
-
-- Aceternity UI components: `https://ui.aceternity.com/components` (use `Stateful Button`, `Codeblock`, `Multi Step Loader`, `Tabs`, `Hero Sections`)
+If that sounds good I'll begin Stage 2 now and open a focused todo for it.
 
 ---
 
-If you want I can start executing this plan: commit the frontend components I built and continue implementing the polish tasks (copy buttons, explorer link, layout improvements). Do you want me to proceed to implement Phase 1 (wire APIs and start orchestration via UI) or commit the current components first? 
+Design author: Assistant (pair-programming with you). 
