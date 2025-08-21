@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import StartDemoButton from '../components/StartDemoButton';
 import ArtifactPanel from '../components/ArtifactPanel';
 import LogViewer from '../components/LogViewer';
-import ProgressStepper from '../components/ProgressStepper';
 import ConnectionDiagram from '../components/ConnectionDiagram';
 import Toast from '../components/Toast';
 
@@ -17,12 +16,48 @@ export default function Page() {
   const [toast, setToast] = useState('');
   const [lastStart, setLastStart] = useState<string>('');
   const [lastNetwork, setLastNetwork] = useState<string>('');
+  const prevStep = React.useRef<string>('idle');
 
   useEffect(() => {
     let t = setInterval(async () => {
       try {
         const s = await fetch('/api/orchestrate/status').then((r) => r.json());
-        setStatus(s.step || 'idle');
+        const newStep = s.step || 'idle';
+        setStatus(newStep);
+        // When transitioning into these states, refresh artifacts — but do not overwrite
+        // existing artifacts with negative results. Retry a few times to allow logs to flush.
+        const shouldFetchArtifacts = ['payment_created', 'verified', 'settled', 'done'];
+        if (prevStep.current !== newStep && shouldFetchArtifacts.includes(newStep)) {
+          const fetchWithRetries = async (url: string, attempts = 3, delayMs = 700) => {
+            for (let i = 0; i < attempts; i++) {
+              try {
+                const res = await fetch(url);
+                if (!res.ok) { await new Promise((r) => setTimeout(r, delayMs)); continue; }
+                const js = await res.json().catch(() => null);
+                // If endpoint explicitly says not found, retry
+                if (js && js.found === false) { await new Promise((r) => setTimeout(r, delayMs)); continue; }
+                return js;
+              } catch (e) {
+                await new Promise((r) => setTimeout(r, delayMs));
+              }
+            }
+            return null;
+          };
+
+          try {
+            const pay = await fetchWithRetries('/api/artifacts/payment', 4, 600);
+            if (pay) setPayment(pay);
+          } catch (_) { }
+          try {
+            const resp = await fetchWithRetries('/api/artifacts/response', 4, 600);
+            if (resp) setResponse(resp);
+          } catch (_) { }
+          // Notify user on completion states
+          if (newStep === 'settled' || newStep === 'done') {
+            setToast('Demo completed');
+          }
+        }
+        prevStep.current = newStep;
         if (s.tx) setResponse((r) => r || { json: { transaction: s.tx } });
 
         const l = await fetch('/api/orchestrate/logs').then((r) => r.text());
@@ -32,9 +67,6 @@ export default function Page() {
         const ac = acRes.ok ? await acRes.json().catch(() => null) : null;
         setAgentCard(ac || null);
 
-        const payRes = await fetch('/api/artifacts/payment');
-        const pay = payRes.ok ? await payRes.json().catch(() => null) : null;
-        setPayment(pay || null);
       } catch (e) {
         // ignore
       }
@@ -117,17 +149,11 @@ export default function Page() {
           <ArtifactPanel agentCard={agentCard} payment={payment} response={response} />
         </aside>
 
-        <main className="col-span-6">
+        <main className="col-span-9">
           <h3 className="mb-2 text-lg font-medium">Logs</h3>
           <LogViewer logs={logs} />
         </main>
-
         <aside className="col-span-3">
-          <h3 className="mb-2 text-lg font-medium">Progress</h3>
-          <div className="p-4 bg-[var(--panel)] rounded-md shadow-sm">
-            <ProgressStepper step={status} />
-          </div>
-
           <div className="mt-6 p-4 bg-[var(--panel)] rounded-md shadow-sm">
             <h4 className="font-medium mb-2">Details</h4>
             <div className="text-sm text-gray-700">Network: polygon-amoy (80002)</div>
