@@ -30,9 +30,16 @@ function findClientLog() {
 function pidExists(file: string) {
   try {
     if (!fs.existsSync(file)) return false;
-    const pid = fs.readFileSync(file, 'utf8').trim();
-    if (!pid) return false;
-    return fs.existsSync(`/proc/${pid}`) || process.kill(Number(pid), 0) === true;
+    const pidRaw = fs.readFileSync(file, 'utf8').trim();
+    const pid = Number(pidRaw);
+    if (!pid || Number.isNaN(pid)) return false;
+    try {
+      // On macOS/Linux, process.kill(pid, 0) will throw if the process does not exist
+      process.kill(pid, 0);
+      return true;
+    } catch (e) {
+      return false;
+    }
   } catch (e) {
     return false;
   }

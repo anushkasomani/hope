@@ -17,7 +17,6 @@ export default function Page() {
   const [toast, setToast] = useState('');
   const [lastStart, setLastStart] = useState<string>('');
   const [lastNetwork, setLastNetwork] = useState<string>('');
-  const [clientLogEntries, setClientLogEntries] = useState<any[]>([]);
 
   useEffect(() => {
     let t = setInterval(async () => {
@@ -43,22 +42,6 @@ export default function Page() {
     return () => clearInterval(t);
   }, []);
 
-  // poll client-log entries for UI debugging
-  useEffect(() => {
-    let t = setInterval(async () => {
-      try {
-        const res = await fetch('/api/orchestrate/client-log');
-        if (res.ok) {
-          const js = await res.json().catch(() => null);
-          if (js && Array.isArray(js.entries)) setClientLogEntries(js.entries.slice(-10).reverse());
-        }
-      } catch (e) {
-        // ignore
-      }
-    }, 2000);
-    return () => clearInterval(t);
-  }, []);
-
   async function startDemo() {
     setRunning(true);
     setToast('Starting demo...');
@@ -79,17 +62,6 @@ export default function Page() {
         setLastNetwork(`status=${res.status}`);
       }
 
-      // report start response to server-side client log for debugging
-      try {
-        await fetch('/api/orchestrate/client-log', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ event: 'start_response', status: res.status, body: js }),
-        }).catch(() => { });
-      } catch (e) {
-        // ignore
-      }
-
       if (res.ok) {
         setToast(js && js.pid ? `Started (pid: ${js.pid})` : 'Started');
         setStatus('starting');
@@ -101,13 +73,6 @@ export default function Page() {
     } catch (e) {
       setToast('Failed to start demo');
       setLastStart(`error: ${String(e)}`);
-      try {
-        await fetch('/api/orchestrate/client-log', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ event: 'start_error', error: String(e) }),
-        }).catch(() => { });
-      } catch (_) { }
     } finally {
       setRunning(false);
       setTimeout(() => setToast(''), 2200);
@@ -144,17 +109,6 @@ export default function Page() {
       ) : null}
       {lastNetwork ? (
         <div className="mb-2 text-sm text-gray-600">Network: {lastNetwork}</div>
-      ) : null}
-
-      {clientLogEntries.length > 0 ? (
-        <div className="mb-4 p-3 bg-[var(--panel)] rounded-md text-sm">
-          <div className="font-medium mb-2">Client log (most recent)</div>
-          <ul className="list-disc pl-5 leading-tight">
-            {clientLogEntries.map((e: any, i: number) => (
-              <li key={i}><strong>{e.ts}</strong>: {JSON.stringify(e.body)}</li>
-            ))}
-          </ul>
-        </div>
       ) : null}
 
       <div className="grid grid-cols-12 gap-6">
