@@ -48,6 +48,22 @@ export default function ArtifactPanel({ agentCard, payment, response, active, on
               <span>Copy</span>
             </button>
           </div>
+          {agentCard ? (
+            <div className="mb-3">
+              {agentCard.name ? <div className="text-lg font-semibold">{agentCard.name}</div> : null}
+              {agentCard.description ? <div className="text-sm text-muted mb-2">{agentCard.description}</div> : null}
+              {agentCard.skills && Array.isArray(agentCard.skills) ? (
+                <div className="mb-2">
+                  <div className="font-medium text-sm">Skills</div>
+                  <ul className="mt-1 text-sm text-muted list-disc list-inside">
+                    {agentCard.skills.map((s: any, i: number) => (
+                      <li key={i}><strong>{s.title || s.id}</strong>: {s.description} <span className="text-xs text-muted">({s.price ? `${(s.price.amount / 10 ** s.price.decimals).toFixed(4)} ${s.price.token}` : ''})</span></li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <CodeBlock content={agentCard ? JSON.stringify(agentCard, null, 2) : '(not available)'} />
         </div>
       )
