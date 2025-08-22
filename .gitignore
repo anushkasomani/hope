@@ -8,3 +8,9 @@ proxy
 __pycache__/
 **/.DS_Store
 python/x402/.venv/
+
+# Local-only demo docs
+/demo/a2a_demo.md
+/demo/a2a.md
+/demo/a2a/frontend/a2a_frontend.md
+/demo/a2a/frontend/design.md
