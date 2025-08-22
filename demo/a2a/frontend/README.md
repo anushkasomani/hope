@@ -16,27 +16,13 @@ Quick local start (tested on macOS/Linux):
      npm install    # or pnpm install
      ```
 
-4. Start the demo services (one of the following):
-   - Option A — single-script (recommended for local testing):
-     ```bash
-     # run from repo root
-     bash demo/scripts/start-all.sh
-     ```
-   - Option B — start services individually (useful for debugging):
-     ```bash
-     cd demo/a2a/facilitator-amoy && npm install && npm run dev
-     cd demo/a2a/resource-server-express && npm install && npm run dev
-     cd demo/a2a/service-agent && npm install && npm run dev
-     cd demo/a2a/client-agent && npm install && npm run dev
-     ```
-
-5. Start the dashboard UI:
+4. Start the dashboard UI:
    ```bash
    cd demo/a2a/frontend
    npm run dev
    ```
 
-6. Open the UI in your browser: `http://localhost:3000` and click "Start Demo" (or run the orchestrator script in step 4 and watch the dashboard update).
+5. Open the UI in your browser: `http://localhost:3000` and click "Start Demo" (or run the orchestrator script in step 4 and watch the dashboard update).
 
 Troubleshooting
 - Logs are written to `/tmp/*.log` (fac.log, service.log, res.log, client_run.log). Tail these for detailed errors.
