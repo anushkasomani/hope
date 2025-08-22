@@ -13,6 +13,26 @@ function findDemoRoot(): string {
 }
 
 export async function POST(req: Request) {
+  // If running on Vercel or in remote orchestrator mode, do NOT shell out.
+  const isVercel = !!process.env.VERCEL;
+  const orchestratorMode = process.env.ORCHESTRATOR_MODE || '';
+  const orchestratorBase = process.env.ORCHESTRATOR_BASE_URL || process.env.ORCHESTRATOR_BASE || '';
+
+  if (isVercel || orchestratorMode === 'remote') {
+    if (!orchestratorBase) {
+      return NextResponse.json({ error: 'shell_out_disabled', reason: 'ORCHESTRATOR_BASE_URL not configured' }, { status: 403 });
+    }
+
+    try {
+      const target = orchestratorBase.replace(/\/$/, '') + '/start';
+      const proxyRes = await fetch(target, { method: 'POST', headers: { 'content-type': 'application/json' }, body: await req.text() });
+      const js = await proxyRes.json().catch(() => null);
+      return NextResponse.json(js || { proxied: true }, { status: proxyRes.status });
+    } catch (e) {
+      return NextResponse.json({ error: 'orchestrator_proxy_failed', details: String(e) }, { status: 500 });
+    }
+  }
+
   const repo = findDemoRoot();
   const script = path.join(repo, 'demo', 'scripts', 'start-all.sh');
   if (!fs.existsSync(script)) {
