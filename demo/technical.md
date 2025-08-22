@@ -1,6 +1,6 @@
 # Technical Details — A2A x402 Polygon Amoy Demo
 
-![Full Flow](/Users/agada/x402_polygon/demo/a2a/frontend/image.png)
+![Full Flow](https://github.com/AkshatGada/x402_Polygon/blob/main/demo/a2a/frontend/image.png)
 
 This document outlines the technical architecture, file responsibilities, protocol mappings (A2A, x402), EIP-712 typed-data, and design rationale for the demo implemented under `demo/a2a/`.
 
