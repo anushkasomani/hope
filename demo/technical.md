@@ -1,5 +1,7 @@
 # Technical Details — A2A x402 Polygon Amoy Demo
 
+![Sequence diagram](image.png)
+
 This document outlines the technical architecture, file responsibilities, protocol mappings (A2A, x402), EIP-712 typed-data, and design rationale for the demo implemented under `demo/a2a/`.
 
 ***
