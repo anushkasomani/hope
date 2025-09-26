@@ -1,4 +1,1 @@
-// client-agent index placeholder
-export const startClientAgent = () => {
-  console.log('Client agent placeholder');
-};
+export { payAndCall, type PayAndCallOptions } from './src/sdk.js';
