@@ -7,9 +7,9 @@ export async function sendMessage(serviceUrl: string, skill: string, input: any)
   // First call without payment
   try {
     const resp = await client.post('/a2a', payload);
-    if (resp.data && resp.data.error && resp.data.error.code === 402) {
+    if (resp.data && (resp.data as any).error && (resp.data as any).error.code === 402) {
       // Got payment required info from service agent
-      const accepts = resp.data.error.data?.accepts || resp.data.error.data?.accepts;
+      const accepts = (resp.data as any).error.data?.accepts || (resp.data as any).error.data?.accepts;
       // For simplicity, pick first accepts and create a payment payload
       const first = Array.isArray(accepts) ? accepts[0] : accepts;
       const envPayment = process.env.PAYMENT_AMOUNT;
