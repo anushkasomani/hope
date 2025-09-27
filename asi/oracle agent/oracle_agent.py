@@ -97,44 +97,41 @@ oracle_agent = Agent(
 
 @oracle_agent.on_message(model=OracleRequest)
 async def handle_oracle_request(ctx: Context, sender: str, msg: OracleRequest):
-    """Handles incoming requests for cryptocurrency prices with x402 payment verification."""
-    ctx.logger.info(f"Received oracle request from {sender} for {msg.currency}")
+    """Handles incoming requests for cryptocurrency prices after payment."""
+    ctx.logger.info(f"Received paid oracle request from {sender} for {msg.currency}")
     
-    # Check if payment amount matches required price
+    # 1. Verify the payment amount sent in the message
     if msg.payment_amount < ORACLE_PRICE:
         await ctx.send(sender, OracleResponse(
             currency=msg.currency, 
             price_usd=0.0, 
             success=False, 
-            message=f"Payment required: {ORACLE_PRICE} USDC (received: {msg.payment_amount})"
+            message=f"Payment required: {ORACLE_PRICE} (received: {msg.payment_amount})"
         ))
         ctx.logger.warning(f"Insufficient payment from {sender}: {msg.payment_amount} < {ORACLE_PRICE}")
         return
+
+    # 2. Since the requestor handled the payment, we can now get the price
+    # (In a real-world scenario, you would add a step here to verify the tx_hash on-chain)
+    price = get_crypto_price(msg.currency.lower())
     
-    # Process x402 payment
-    operations = [{"type": "oracle_price", "currency": msg.currency}]
-    tx_hash = await process_x402_payment(operations, msg.payment_amount, msg.user_address)
-    
-    if not tx_hash or tx_hash.startswith("0x") and len(tx_hash) == 66:
-        # Payment processed successfully, get the price
-        price = get_crypto_price(msg.currency.lower())
-        
-        # Send the response back to the requester
+    # 3. Send the response back to the requester
+    if price > 0.0:
         await ctx.send(sender, OracleResponse(
             currency=msg.currency, 
             price_usd=price, 
             success=True, 
-            message=f"Payment processed: {tx_hash}"
+            message=f"Payment of {msg.payment_amount} accepted for user {msg.user_address}"
         ))
-        ctx.logger.info(f"Sent price of {msg.currency} to {sender}: ${price} (tx: {tx_hash})")
+        ctx.logger.info(f"Sent price of {msg.currency} to {sender}: ${price}")
     else:
         await ctx.send(sender, OracleResponse(
-            currency=msg.currency, 
-            price_usd=0.0, 
-            success=False, 
-            message="Payment processing failed"
+            currency=msg.currency,
+            price_usd=0.0,
+            success=False,
+            message=f"Could not fetch price for {msg.currency}"
         ))
-        ctx.logger.error(f"Payment processing failed for {sender}")
+        ctx.logger.error(f"Failed to fetch price for {msg.currency} for sender {sender}")
 
 @oracle_agent.on_message(model=PaymentVerification)
 async def handle_payment_verification(ctx: Context, sender: str, msg: PaymentVerification):

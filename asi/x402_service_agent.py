@@ -214,8 +214,8 @@ async def handle_payment_verification(ctx: Context, sender: str, msg: PaymentVer
         await ctx.send(sender, {"error": f"Payment verification failed: {str(e)}"})
 
 if __name__ == "__main__":
-    # Fund the agent if needed
-    fund_agent_if_low(service_agent.wallet.address())
+    # Fund the agent if needed (commented out for local testing)
+    # fund_agent_if_low(service_agent.wallet.address())
     
     print(f"Service Agent Address: {service_agent.address}")
     print(f"Service Agent running on port 8000")
