@@ -1,17 +1,19 @@
-from uagents import Agent, Context
-
-# instantiate agent
+from uagents import Agent, Context, Model
+ 
+class Message(Model):
+    message: str
+ 
+SEED_PHRASE = "put_your_seed_phrase_here"
+ 
+# Now your agent is ready to join the Agentverse!
 agent = Agent(
     name="alice",
-    seed="secret_seed_phrase",
     port=8000,
-    endpoint=["http://localhost:8000/submit"]
+    mailbox=True        
 )
-
-# startup handler
-@agent.on_event("startup")
-async def startup_function(ctx: Context):
-    ctx.logger.info(f"Hello, I'm agent {agent.name} and my address is {agent.address}.")
-
+ 
+# Copy the address shown below
+print(f"Your agent's address is: {agent.address}")
+ 
 if __name__ == "__main__":
     agent.run()

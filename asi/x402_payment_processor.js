@@ -19,17 +19,17 @@ async function processPayment(requestData) {
       body
     } = requestData;
 
-        // Prepare payment options
-        const opts = {
-            serviceUrl: service_url || 'http://localhost:5403',
-            endpoint: endpoint || '/premium/summarize',
-            method: method || 'POST',
-            body: body || { text: 'Hello from uAgent' },
-            tokenContract: process.env.AMOY_USDC_ADDRESS,
-            payFrom: process.env.PRIVATE_KEY_ADDRESS, // Use the actual key address
-            payTo: process.env.ADDRESS,
-            amount: payment_amount.toString()
-        };
+    // Prepare payment options
+    const opts = {
+      serviceUrl: service_url || 'http://localhost:5403',
+      endpoint: endpoint || '/premium/summarize',
+      method: method || 'POST',
+      body: body || { text: 'Hello from uAgent' },
+      tokenContract: process.env.AMOY_USDC_ADDRESS,
+      payFrom: process.env.PRIVATE_KEY_ADDRESS, // Use the actual key address
+      payTo: process.env.ADDRESS,
+      amount: payment_amount.toString()
+    };
 
     console.log('Processing x402 payment:', opts);
 
