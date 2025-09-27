@@ -44,12 +44,10 @@ async function processPayment(requestData) {
     let transactionHash = '';
     try {
       const responseData = JSON.parse(responseText);
-      // Look for transaction hash in the response or logs
-      transactionHash = responseData.transaction_hash ||
-        responseData.tx_hash ||
-        '0x' + require('crypto').randomBytes(32).toString('hex');
+      // Only extract real transaction hash from successful response
+      transactionHash = responseData.transaction_hash || responseData.tx_hash || '';
     } catch (e) {
-      transactionHash = '0x' + require('crypto').randomBytes(32).toString('hex');
+      transactionHash = '';
     }
 
     return {
@@ -63,7 +61,7 @@ async function processPayment(requestData) {
     console.error('Error processing x402 payment:', error);
     return {
       success: false,
-      transaction_hash: '0x' + require('crypto').randomBytes(32).toString('hex'),
+      transaction_hash: '',
       error: error.message,
       operations_processed: 0
     };
