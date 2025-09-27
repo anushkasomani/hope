@@ -3,7 +3,7 @@
 echo "🚀 Starting x402 Service Agent..."
 
 # Start service agent in background
-python x402_service_agent.py &
+source venv/bin/activate && python3 x402_service_agent.py &
 SERVICE_PID=$!
 
 # Wait a moment for service agent to start
@@ -19,7 +19,7 @@ echo ""
 sleep 5
 
 echo "🚀 Starting x402 Client Agent..."
-python x402_client_agent.py &
+source venv/bin/activate && python3 x402_client_agent.py &
 CLIENT_PID=$!
 
 echo "📡 Client agent started with PID: $CLIENT_PID"
